@@ -53,19 +53,6 @@ All settings can be overridden with environment variables — no need to edit an
 | `SR_API_SECRET`             | _(empty)_                    | Schema Registry API secret               |
 | `AVRO_SCAN_PACKAGE`         | `io.outbox.avro`             | Package to scan for SpecificRecord classes |
 
-### Confluent Cloud example
-
-```bash
-KAFKA_BOOTSTRAP=pkc-xxx.us-east-1.aws.confluent.cloud:9092 \
-KAFKA_SECURITY_PROTOCOL=SASL_SSL \
-KAFKA_API_KEY=my-key \
-KAFKA_API_SECRET=my-secret \
-SCHEMA_REGISTRY_URL=https://psrc-xxx.us-east-1.aws.confluent.cloud \
-SR_API_KEY=sr-key \
-SR_API_SECRET=sr-secret \
-java -jar target/outbox-1.0.0.jar
-```
-
 ### Adding your own Avro schemas
 
 Drop `.avsc` files into `src/main/resources/avro/` and rebuild. Outbox will code-generate the SpecificRecord classes and make them available in the UI automatically.
