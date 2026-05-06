@@ -1,0 +1,40 @@
+Outbox
+Copyright 2026 Outbox Contributors
+
+This product is licensed under the Apache License 2.0 and the MIT License.
+See LICENSE-APACHE and LICENSE-MIT for details.
+
+-------------------------------------------------------------------------------
+THIRD-PARTY DEPENDENCIES
+-------------------------------------------------------------------------------
+
+This software includes the following third-party components. Their licenses
+are listed below. Redistribution of compiled binaries that include these
+components must comply with each component's license terms.
+
+Spring Boot & Spring Kafka
+  License: Apache License 2.0
+  https://spring.io
+
+Apache Avro
+  License: Apache License 2.0
+  https://avro.apache.org
+
+Apache Kafka Clients
+  License: Apache License 2.0
+  https://kafka.apache.org
+
+Confluent kafka-avro-serializer & kafka-schema-registry-client
+  License: Confluent Community License 1.0
+  https://www.confluent.io/confluent-community-license
+  NOTE: The Confluent Community License permits use, copying, modification,
+  and distribution for any purpose other than competing with Confluent's
+  commercial offerings. Review the full license terms before redistribution.
+
+DataFaker
+  License: Apache License 2.0
+  https://www.datafaker.net
+
+Reflections
+  License: Apache License 2.0
+  https://github.com/ronmamo/reflections

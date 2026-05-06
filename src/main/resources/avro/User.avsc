@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "namespace": "io.outbox.avro",
+  "name": "User",
+  "doc": "Sample Avro schema. Drop additional .avsc files in this folder and they will be code-generated on build.",
+  "fields": [
+    { "name": "id",        "type": "string",  "doc": "User UUID" },
+    { "name": "email",     "type": "string" },
+    { "name": "firstName", "type": "string" },
+    { "name": "lastName",  "type": "string" },
+    { "name": "age",       "type": "int" },
+    { "name": "active",    "type": "boolean" },
+    {
+      "name": "role",
+      "type": {
+        "type": "enum",
+        "name": "Role",
+        "symbols": ["ADMIN", "USER", "GUEST"]
+      }
+    },
+    {
+      "name": "phoneNumber",
+      "type": ["null", "string"],
+      "default": null
+    },
+    {
+      "name": "createdAt",
+      "type": { "type": "long", "logicalType": "timestamp-millis" }
+    }
+  ]
+}

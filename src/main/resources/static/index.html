@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Outbox</title>
+<link rel="icon" type="image/svg+xml" href="logo_dot.svg">
+<style>
+  :root {
+    --bg:           #1e1e1e;
+    --panel:        #252526;
+    --panel-2:      #2d2d2d;
+    --input-bg:     #3c3c3c;
+    --accent:       #0e639c;
+    --accent-hover: #1177bb;
+    --text:         #cccccc;
+    --muted:        #858585;
+    --ok:           #4ec9b0;
+    --err:          #f44747;
+    --border:       #454545;
+    --active-tab:   #094771;
+  }
+  body.light {
+    --bg:           #ffffff;
+    --panel:        #f3f3f3;
+    --panel-2:      #ececec;
+    --input-bg:     #ffffff;
+    --accent:       #0078d4;
+    --accent-hover: #106ebe;
+    --text:         #1f1f1f;
+    --muted:        #717171;
+    --ok:           #16825d;
+    --err:          #cd3131;
+    --border:       #d4d4d4;
+    --active-tab:   #0078d4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); margin: 0; padding: 24px;
+    line-height: 1.5; font-weight: 400;
+  }
+  #watermark {
+    display: none;
+  }
+  .container { max-width: 1280px; margin: 0 auto; position: relative; z-index: 1; }
+  footer { position: relative; z-index: 1; }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; letter-spacing: 0.01em; }
+  .subtitle { color: var(--muted); margin: 0 0 24px; font-size: 13px; font-weight: 400; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
+          padding: 20px; margin-bottom: 12px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-header label { margin: 0; }
+  .collapse-btn { background: transparent; border: none; color: var(--muted); cursor: pointer;
+                  font-size: 12px; padding: 2px 6px; width: auto; }
+  .collapse-btn:hover { color: var(--text); }
+  .collapsible { }
+  .collapsible.collapsed { display: none; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+  input, select, textarea {
+    font-family: inherit; font-size: 13px; font-weight: 400;
+    background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 2px; padding: 7px 10px; width: 100%;
+  }
+  button {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 2px; padding: 7px 10px; width: 100%;
+  }
+  textarea { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; min-height: 180px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #007acc; }
+  .modes { display: flex; gap: 0; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .sr-subject-item { padding:7px 14px;font-size:13px;cursor:pointer;border-left:3px solid transparent; }
+  .sr-subject-item:hover { background:var(--panel-2); }
+  .sr-subject-item.active { border-left-color:var(--accent);background:var(--panel-2);color:var(--accent);font-weight:500; }
+  .sr-version-chip { padding:3px 10px;border-radius:12px;font-size:12px;cursor:pointer;background:var(--panel-2);border:1px solid var(--border); }
+  .sr-version-chip:hover { border-color:var(--accent); }
+  .sr-version-chip.active { background:var(--accent);color:#fff;border-color:var(--accent); }
+  .mode-btn { flex: 1; cursor: pointer; background: var(--panel-2); border: none;
+              border-right: 1px solid var(--border); padding: 8px 16px; text-align: center;
+              user-select: none; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .mode-btn:last-child { border-right: none; }
+  .mode-btn.active { background: var(--active-tab); color: #ffffff; }
+  .mode-btn:hover:not(.active) { background: var(--input-bg); color: var(--text); }
+  .mode-panel { display: none; }
+  .mode-panel.active { display: block; }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .send {
+    background: var(--accent); border: 1px solid var(--accent); color: #ffffff;
+    cursor: pointer; font-weight: 500; padding: 9px;
+  }
+  .send:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .send:disabled { opacity: 0.45; cursor: not-allowed; }
+  .apply-btn {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    cursor: pointer; padding: 7px 20px; width: auto;
+  }
+  .apply-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--panel-2); }
+  .disconnect-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    cursor: pointer; padding: 7px 20px; width: auto; margin-left: 8px;
+  }
+  .disconnect-btn:hover { border-color: var(--err); color: var(--err); background: transparent; }
+  .disconnect-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .conn-status { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-left: 16px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .status-dot.configured { background: var(--ok); }
+  .status-dot.disconnected { background: var(--muted); }
+  .status-label { color: var(--muted); }
+  .status-label.configured { color: var(--ok); }
+  .status-note { font-size: 11px; color: var(--muted); margin-left: 4px; }
+  .conn-footer { display: flex; align-items: center; margin-top: 16px; }
+  .auth-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .overrides-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 8px; }
+  .overrides-row button { width: 32px; padding: 0; background: transparent; border-color: var(--border); cursor: pointer; color: var(--muted); }
+  .overrides-row button:hover { color: var(--err); border-color: var(--err); background: transparent; }
+  .add-row { background: transparent; color: var(--accent); border: 1px dashed var(--border);
+             cursor: pointer; padding: 7px; }
+  .add-row:hover { border-color: var(--accent); background: transparent; }
+  .result-err { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
+               white-space: pre-wrap; word-break: break-word; color: var(--err);
+               border-left: 3px solid var(--err); padding-left: 12px; }
+  .result-summary { font-size: 13px; color: var(--ok); margin-bottom: 12px; font-weight: 500; }
+  .record-block { border: 1px solid var(--border); border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
+  .record-block:last-child { margin-bottom: 0; }
+  .record-meta { display: flex; gap: 20px; background: var(--panel-2); padding: 8px 12px; font-size: 12px; }
+  .record-meta span { color: var(--muted); }
+  .record-meta strong { color: var(--text); margin-left: 4px; font-weight: 500; }
+  .record-section { padding: 10px 12px; border-top: 1px solid var(--border); }
+  .record-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+                          color: var(--muted); margin-bottom: 6px; }
+  .record-json { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
+                 white-space: pre-wrap; word-break: break-word; color: var(--text); margin: 0; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .hint code { background: var(--input-bg); padding: 1px 5px; border-radius: 2px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  footer { text-align: center; padding: 28px 24px; margin-top: 12px; }
+  footer img { height: 72px; border-radius: 6px; display: inline-block; }
+  .logo-dark, .logo-light { display: none; }
+  .license { margin-top: 12px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .title-bar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .theme-toggle { background: transparent; border: 1px solid var(--border); color: var(--muted);
+                  cursor: pointer; font-size: 12px; padding: 3px 10px; border-radius: 2px; width: auto; }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+  .tab-bar { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; margin-top: 16px; }
+  .tab { padding: 9px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--muted); border: none;
+         background: transparent; border-bottom: 2px solid transparent; margin-bottom: -1px;
+         user-select: none; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  /* Collections */
+  .coll-group { margin-bottom: 6px; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .coll-group-header { display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+                       background: var(--panel-2); cursor: pointer; user-select: none; }
+  .coll-group-header .coll-name { flex: 1; font-size: 12px; font-weight: 500; color: var(--text); }
+  .coll-group-header .coll-count { font-size: 11px; color: var(--muted); background: var(--input-bg);
+                                   border: 1px solid var(--border); border-radius: 10px; padding: 1px 6px; }
+  .coll-group-header .coll-del { background: transparent; border: none; color: var(--muted);
+                                  cursor: pointer; font-size: 12px; padding: 2px 4px; width: auto; line-height: 1; }
+  .coll-group-header .coll-del:hover { color: var(--err); background: transparent; }
+  .coll-group-header .coll-arrow { font-size: 10px; color: var(--muted); display: inline-block; transition: transform 0.15s; }
+  .coll-group-body { display: none; }
+  .coll-group-body.open { display: block; }
+  .coll-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 14px;
+               cursor: pointer; border-top: 1px solid var(--border); }
+  .coll-item:hover { background: var(--input-bg); }
+  .coll-item .item-name { flex: 1; font-size: 12px; color: var(--text); }
+  .coll-item .item-url  { font-size: 11px; color: var(--muted); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .coll-item .item-del  { background: transparent; border: none; color: transparent;
+                           cursor: pointer; font-size: 12px; padding: 2px 4px; width: auto; line-height: 1; }
+  .coll-item:hover .item-del { color: var(--muted); }
+  .coll-item .item-del:hover { color: var(--err) !important; background: transparent; }
+  .method-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 2px;
+                 color: #fff; flex-shrink: 0; text-transform: uppercase; min-width: 44px; text-align: center; }
+  .save-form { margin-top: 10px; padding: 12px; background: var(--panel-2);
+               border: 1px solid var(--border); border-radius: 4px; }
+  .save-form-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div id="watermark"></div>
+<div class="container">
+  <div class="title-bar">
+    <h1 style="display:flex;align-items:center;gap:10px">
+      <img src="logo_dot.svg" style="width:32px;height:32px;border-radius:8px;flex-shrink:0" alt="Outbox logo">
+      Outbox
+    </h1>
+    <button class="theme-toggle" id="themeToggle">☀ Light</button>
+  </div>
+  <p class="subtitle">Ride your stack. Kafka producer, REST client, load tester — all in one place.</p>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab active" data-tab="kafka">Kafka Producer</button>
+    <button class="tab"        data-tab="rest">REST API</button>
+  </div>
+
+  <!-- Kafka tab -->
+  <div class="tab-panel active" id="tab-kafka">
+
+  <!-- Connection Settings -->
+  <div class="card">
+    <div class="card-header">
+      <label>Connection Settings</label>
+      <button class="collapse-btn" id="connToggle">▲ Collapse</button>
+    </div>
+    <div class="collapsible" id="connBody">
+      <div class="row field">
+        <div>
+          <label for="bootstrapServers">Bootstrap Servers</label>
+          <input id="bootstrapServers" placeholder="localhost:9092" />
+        </div>
+        <div>
+          <label for="schemaRegistryUrl">Schema Registry URL</label>
+          <input id="schemaRegistryUrl" placeholder="http://localhost:8081" />
+        </div>
+      </div>
+      <div class="row field">
+        <div>
+          <label for="securityProtocol">Security Protocol</label>
+          <select id="securityProtocol">
+            <option value="PLAINTEXT">PLAINTEXT</option>
+            <option value="SASL_PLAINTEXT">SASL_PLAINTEXT</option>
+            <option value="SASL_SSL">SASL_SSL</option>
+            <option value="SSL">SSL</option>
+          </select>
+        </div>
+        <div>
+          <label for="saslMechanism">SASL Mechanism</label>
+          <select id="saslMechanism">
+            <option value="PLAIN">PLAIN</option>
+            <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
+            <option value="SCRAM-SHA-512">SCRAM-SHA-512</option>
+          </select>
+        </div>
+      </div>
+      <div class="auth-section" id="authSection" style="display:none">
+        <div class="row field">
+          <div>
+            <label for="kafkaApiKey">Broker Username / API Key</label>
+            <input id="kafkaApiKey" placeholder="e.g. ABCDEFGHIJKLMNOP" />
+          </div>
+          <div>
+            <label for="kafkaApiSecret">Broker Password / API Secret</label>
+            <input id="kafkaApiSecret" type="password" placeholder="broker password or secret" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="saslJaasConfig">SASL JAAS Config <span style="text-transform:none;font-size:11px;color:var(--muted)">(optional — auto-built from key/secret above if left blank)</span></label>
+          <input id="saslJaasConfig" placeholder='auto-built from username/password above if left blank' />
+        </div>
+      </div>
+      <div class="auth-section" id="srSection">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Schema Registry Auth</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label for="srCredentialsSource" style="white-space:nowrap;margin-bottom:0;font-size:11px">Credentials Source</label>
+          <select id="srCredentialsSource" style="width:150px;flex-shrink:0">
+            <option value="USER_INFO">USER_INFO</option>
+            <option value="SASL_INHERIT">SASL_INHERIT</option>
+            <option value="URL">URL</option>
+          </select>
+          <div id="srUserInfoFields" style="display:flex;gap:10px;flex:1;min-width:0;align-items:center">
+            <label for="srUsername" style="white-space:nowrap;margin-bottom:0;font-size:11px">Username / API Key</label>
+            <input id="srUsername" placeholder="SR username or API key" style="flex:1;min-width:0" />
+            <label for="srPassword" style="white-space:nowrap;margin-bottom:0;font-size:11px">Password / API Secret</label>
+            <input id="srPassword" type="password" placeholder="SR password or API secret" style="flex:1;min-width:0" />
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;font-weight:500">
+          <input type="checkbox" id="autoRegisterSchemas" checked style="width:15px;height:15px;cursor:pointer" />
+          Auto-register schemas
+          <span style="font-size:11px;font-weight:400;color:var(--muted)">(disable in production to prevent accidental schema creation)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;font-weight:500">
+          <input type="checkbox" id="useLatestVersion" style="width:15px;height:15px;cursor:pointer" />
+          Use latest schema version
+          <span style="font-size:11px;font-weight:400;color:var(--muted)">(always serialize with the latest version registered in the Schema Registry)</span>
+        </label>
+      </div>
+      <div class="conn-footer">
+        <button class="apply-btn" id="applyConn">Apply Connection</button>
+        <button class="disconnect-btn" id="disconnectConn" disabled>Disconnect</button>
+        <div class="conn-status">
+          <span class="status-dot disconnected" id="statusDot"></span>
+          <span class="status-label" id="statusLabel">Disconnected</span>
+          <span class="status-note" id="statusNote">— configure settings and click Apply</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topic & Count -->
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label for="topic">Topic</label>
+        <input id="topic" placeholder="users.test" />
+      </div>
+      <div class="field">
+        <label for="count">Count</label>
+        <input id="count" type="number" value="1" min="1" max="1000" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Headers -->
+  <div class="card">
+    <div class="card-header">
+      <label>Headers <span style="font-weight:400;font-size:11px;text-transform:none;color:var(--muted)">(optional)</span></label>
+      <button class="collapse-btn" id="headersToggle">▼ Show</button>
+    </div>
+    <div id="headersBody" style="display:none">
+      <div id="headersList"></div>
+      <button class="add-row" id="addHeaderBtn" type="button" style="margin-top:6px">+ Add Header</button>
+    </div>
+  </div>
+
+  <!-- Key -->
+  <div class="card">
+    <div class="card-header">
+      <label>Key</label>
+      <div class="modes" style="margin-bottom:0;width:auto">
+        <div class="mode-btn active" id="keyTypeString" data-keytype="string">String</div>
+        <div class="mode-btn" id="keyTypeAvro" data-keytype="avro">Avro Object</div>
+        <div class="mode-btn" id="keyTypeGeneric" data-keytype="generic">Generic Avro</div>
+      </div>
+    </div>
+
+    <!-- String key -->
+    <div id="keyStringPanel">
+      <div class="field">
+        <label for="key">Message Key <span style="text-transform:none;font-size:11px">(optional)</span></label>
+        <input id="key" placeholder="user-123" />
+      </div>
+    </div>
+
+    <!-- Generic Avro key -->
+    <div id="keyGenericPanel" style="display:none">
+      <div class="field">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label for="genericKeySchema" style="margin-bottom:0">Key Avro Schema (JSON)</label>
+          <div style="display:flex;gap:6px">
+            <button class="apply-btn" type="button" style="padding:3px 10px;font-size:12px;white-space:nowrap" onclick="prettyJson('genericKeySchema')">{ }</button>
+            <button class="apply-btn" id="browseRegistryKeyBtn" type="button" style="padding:3px 12px;font-size:12px">Browse Registry</button>
+          </div>
+        </div>
+        <textarea id="genericKeySchema" rows="5" placeholder='{"type":"record","name":"UserKey","fields":[{"name":"id","type":"string"}]}'></textarea>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label for="genericKeyPayload" style="margin-bottom:0">Key Value (JSON)</label>
+          <button class="apply-btn" type="button" style="padding:3px 10px;font-size:12px;white-space:nowrap" onclick="prettyJson('genericKeyPayload')">{ }</button>
+        </div>
+        <textarea id="genericKeyPayload" style="min-height:60px" placeholder='{"id": "u-1"}'></textarea>
+      </div>
+    </div>
+
+    <!-- Avro key -->
+    <div id="keyAvroPanel" style="display:none">
+      <div class="row field">
+        <div>
+          <label for="keyClassName">Key Avro Class</label>
+          <select id="keyClassName"></select>
+        </div>
+        <div>
+          <label>Generation Mode</label>
+          <div class="modes" style="margin-bottom:0">
+            <div class="mode-btn active" id="keyModeAuto" data-keymode="auto">Auto</div>
+            <div class="mode-btn" id="keyModeManual" data-keymode="manual">Manual JSON</div>
+          </div>
+        </div>
+      </div>
+      <div class="field" id="keySchemaPreviewWrapper" style="display:none">
+        <div class="record-section-label" style="margin-bottom:6px">Avro Schema</div>
+        <pre class="record-json" id="keySchemaPreview" style="background:var(--panel-2);border:1px solid var(--border);border-radius:4px;padding:12px;max-height:220px;overflow:auto"></pre>
+      </div>
+      <div id="keyManualPanel" class="field" style="display:none">
+        <label for="keyJsonPayload">Key JSON</label>
+        <textarea id="keyJsonPayload" style="min-height:80px" placeholder='{"id": "k-1", ...}'></textarea>
+      </div>
+      <div style="margin-top:4px">
+        <button class="apply-btn" id="generateKeyBtn" type="button">Generate Sample Key</button>
+      </div>
+      <div id="keySamplePreview" style="display:none;margin-top:12px">
+        <div class="record-block">
+          <div class="record-section">
+            <div class="record-section-label">Key Preview</div>
+            <pre class="record-json" id="keySampleJson"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Value -->
+  <div class="card">
+    <div class="card-header">
+      <label>Value</label>
+      <div class="modes" style="margin-bottom:0;width:auto">
+        <div class="mode-btn active" data-mode="auto">Auto</div>
+        <div class="mode-btn" data-mode="hybrid">Auto + Overrides</div>
+        <div class="mode-btn" data-mode="manual">Manual JSON</div>
+        <div class="mode-btn" data-mode="generic">Generic Avro</div>
+      </div>
+    </div>
+    <div class="field" id="classNameField">
+      <label for="className">Value Avro Class</label>
+      <select id="className"></select>
+    </div>
+
+    <div class="mode-panel active" id="panel-auto">
+      <div class="field" id="schemaPreviewWrapper" style="display:none">
+        <div class="record-section-label" style="margin-bottom:6px">Avro Schema</div>
+        <pre class="record-json" id="schemaPreview" style="background:var(--panel-2);border:1px solid var(--border);border-radius:4px;padding:12px;max-height:220px;overflow:auto"></pre>
+      </div>
+      <div style="margin-top:8px">
+        <button class="apply-btn" id="generateSampleBtn" type="button">Generate Sample Value</button>
+      </div>
+      <div id="samplePreview" style="display:none;margin-top:12px">
+        <div class="record-block">
+          <div class="record-section">
+            <div class="record-section-label">Value Preview</div>
+            <pre class="record-json" id="sampleValue"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-panel" id="panel-hybrid">
+      <p class="hint">Random everywhere except the fields you list below.</p>
+      <div id="overrides"></div>
+      <button class="add-row" id="addOverride" type="button">+ Add field override</button>
+    </div>
+
+    <div class="mode-panel" id="panel-manual">
+      <p class="hint">Avro JSON encoding. Nullable unions wrap as <code>{"type": value}</code>.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span></span>
+        <button class="apply-btn" type="button" style="padding:3px 10px;font-size:12px;white-space:nowrap" onclick="prettyJson('jsonPayload')">{ }</button>
+      </div>
+      <textarea id="jsonPayload" placeholder='{"id": "u-1", "email": "...", ...}'></textarea>
+    </div>
+
+    <div class="mode-panel" id="panel-generic">
+      <p class="hint">Paste your Avro schema and a matching JSON value.</p>
+      <div class="field">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label for="genericSchema" style="margin-bottom:0">Avro Schema (JSON)</label>
+          <div style="display:flex;gap:6px">
+            <button class="apply-btn" type="button" style="padding:3px 10px;font-size:12px;white-space:nowrap" onclick="prettyJson('genericSchema')">{ }</button>
+            <button class="apply-btn" id="browseRegistryBtn" type="button" style="padding:3px 12px;font-size:12px">Browse Registry</button>
+          </div>
+        </div>
+        <textarea id="genericSchema" rows="8" placeholder='{"type":"record","name":"User","namespace":"com.example","fields":[{"name":"id","type":"string"},{"name":"email","type":"string"}]}'></textarea>
+      </div>
+
+      <!-- Referenced Schemas -->
+      <div style="margin-top:12px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--panel-2);cursor:pointer" id="refSchemasToggle">
+          <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Referenced Schemas</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="add-row" id="addRefSchema" type="button" style="padding:2px 10px;font-size:12px" onclick="event.stopPropagation()">+ Add</button>
+            <span id="refSchemasChevron" style="font-size:11px;color:var(--muted)">▼</span>
+          </div>
+        </div>
+        <div id="refSchemasBody" style="display:none;padding:10px 12px">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 8px">If your schema uses types defined in other schemas, paste each one here. They are parsed top to bottom before the main schema.</p>
+          <div id="refSchemasList"></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label for="genericPayload" style="margin-bottom:0">Value (JSON)</label>
+          <button class="apply-btn" type="button" style="padding:3px 10px;font-size:12px;white-space:nowrap" onclick="prettyJson('genericPayload')">{ }</button>
+        </div>
+        <textarea id="genericPayload" placeholder='{"id": "u-1", "email": "user@example.com"}'></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <button class="apply-btn" id="validateGenericBtn" type="button">Validate</button>
+        <span id="validateResult" style="font-size:13px"></span>
+      </div>
+    </div>
+
+    <button class="send" id="sendBtn" style="margin-top:16px">Send</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <label>Result</label>
+    <div id="result" style="margin-top:10px"></div>
+  </div>
+
+  </div><!-- /#tab-kafka -->
+
+  <!-- REST tab -->
+  <div class="tab-panel" id="tab-rest">
+
+  <!-- Environments -->
+  <div class="card" id="envCard">
+    <div class="card-header">
+      <label>Environments</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="envSelector" style="width:160px;font-size:12px;padding:3px 8px"></select>
+        <button class="apply-btn" id="newEnvBtn" style="width:auto;padding:3px 12px;font-size:12px">+ New</button>
+        <button class="collapse-btn" id="envToggle">▲ Collapse</button>
+      </div>
+    </div>
+    <div class="collapsible" id="envBody">
+      <div id="envEditor" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="add-row" id="addEnvVarBtn" style="width:auto;padding:5px 14px;font-size:12px">+ Add variable</button>
+        <button class="send" id="saveEnvBtn" style="width:auto;padding:6px 18px;font-size:12px">Save</button>
+        <button class="disconnect-btn" id="deleteEnvBtn" style="padding:6px 14px;font-size:12px;display:none">Delete environment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collections -->
+  <div class="card">
+    <div class="card-header">
+      <label>Collections</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="collapse-btn" id="exportCollBtn" style="border:1px solid var(--border);border-radius:2px;padding:2px 10px">Export</button>
+        <button class="collapse-btn" id="importCollBtn" style="border:1px solid var(--border);border-radius:2px;padding:2px 10px">Import</button>
+        <input type="file" id="importCollFile" accept=".json" style="display:none" />
+        <button class="collapse-btn" id="collectionsToggle">▲ Collapse</button>
+      </div>
+    </div>
+    <!-- Import mode chooser -->
+    <div id="importModeBar" style="display:none;padding:10px 0 4px;display:none">
+      <span style="font-size:12px;color:var(--muted);margin-right:10px">Import as:</span>
+      <button class="apply-btn" id="importMergeBtn" style="padding:4px 14px;font-size:12px;margin-right:6px">Merge</button>
+      <button class="apply-btn" id="importReplaceBtn" style="padding:4px 14px;font-size:12px;margin-right:10px">Replace all</button>
+      <button class="collapse-btn" id="importCancelBtn" style="padding:4px 8px;font-size:12px">Cancel</button>
+    </div>
+    <div class="collapsible" id="collectionsBody">
+      <div id="collectionsList"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <label>Request</label>
+      <button class="collapse-btn" id="restToggle">▲ Collapse</button>
+    </div>
+    <div class="collapsible" id="restBody">
+      <!-- Method + URL -->
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <select id="restMethod" style="width:130px;flex-shrink:0">
+          <option>GET</option>
+          <option>POST</option>
+          <option>PUT</option>
+          <option>PATCH</option>
+          <option>DELETE</option>
+        </select>
+        <input id="restUrl" placeholder="https://api.example.com/endpoint" style="flex:1" />
+      </div>
+
+      <!-- Headers -->
+      <div class="field">
+        <label>Headers <span style="text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label>
+        <div id="restHeaders"></div>
+        <button class="add-row" id="addRestHeader" type="button" style="margin-top:6px">+ Add header</button>
+      </div>
+
+      <!-- Body -->
+      <div class="field" id="restBodyField">
+        <label>Body</label>
+        <textarea id="restBody" style="min-height:120px" placeholder='{"key": "value"}'></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="send" id="restSendBtn" style="flex:1">Send</button>
+        <button class="apply-btn" id="openSaveBtn" style="width:auto;padding:9px 18px">Save</button>
+      </div>
+      <!-- Inline save dialog -->
+      <div class="save-form" id="saveDialog" style="display:none">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;font-weight:500">Save to Collection</div>
+        <div class="save-form-row">
+          <input id="saveCollName" list="existingCollList" placeholder="Collection name" style="flex:1;min-width:130px" />
+          <datalist id="existingCollList"></datalist>
+          <input id="saveReqName" placeholder="Request name" style="flex:1;min-width:130px" />
+          <button class="send" id="confirmSaveBtn" style="width:auto;padding:7px 18px;font-size:12px">Save</button>
+          <button class="collapse-btn" id="cancelSaveBtn" style="padding:7px 10px;border:1px solid var(--border);border-radius:2px">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="restResultCard" style="display:none">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+      <span id="restStatusBadge" style="font-size:13px;font-weight:600;padding:3px 10px;border-radius:2px"></span>
+      <span id="restDuration" style="font-size:12px;color:var(--muted)"></span>
+      <button class="collapse-btn" id="restHeadersToggle" style="margin-left:auto">▼ Show Headers</button>
+    </div>
+    <div id="restRespHeaders" style="display:none;margin-bottom:12px">
+      <div class="record-section-label" style="margin-bottom:6px">Response Headers</div>
+      <pre class="record-json" id="restRespHeadersJson" style="background:var(--panel-2);border:1px solid var(--border);border-radius:4px;padding:10px;max-height:160px;overflow:auto;font-size:11px"></pre>
+    </div>
+    <div class="record-section-label" style="margin-bottom:6px">Response Body</div>
+    <pre class="record-json" id="restRespBody" style="background:var(--panel-2);border:1px solid var(--border);border-radius:4px;padding:12px;max-height:400px;overflow:auto"></pre>
+  </div>
+
+  <!-- Request History -->
+  <div class="card">
+    <div class="card-header">
+      <label>History</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="disconnect-btn" id="clearHistoryBtn" style="padding:2px 10px;font-size:12px">Clear</button>
+        <button class="collapse-btn" id="historyToggle">▲ Collapse</button>
+      </div>
+    </div>
+    <div class="collapsible" id="historyBody">
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- Load Test -->
+  <div class="card">
+    <div class="card-header">
+      <label>Load Test</label>
+      <button class="collapse-btn" id="ltToggle">▲ Collapse</button>
+    </div>
+    <div class="collapsible" id="ltBody">
+      <div class="row-3" style="margin-bottom:14px">
+        <div class="field">
+          <label>Total Requests</label>
+          <input type="number" id="ltRequests" value="20" min="1" max="1000">
+        </div>
+        <div class="field">
+          <label>Concurrency</label>
+          <input type="number" id="ltConcurrency" value="5" min="1" max="50">
+        </div>
+        <div class="field">
+          <label>Delay between batches (ms)</label>
+          <input type="number" id="ltDelay" value="0" min="0" max="5000">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="send" id="ltRunBtn" style="flex:1">Run Load Test</button>
+        <button class="disconnect-btn" id="ltStopBtn" style="display:none;padding:9px 20px">Stop</button>
+      </div>
+      <!-- Progress -->
+      <div id="ltProgress" style="display:none;margin-top:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span id="ltProgressLabel" style="font-size:12px;color:var(--muted)">0 / 0</span>
+          <span id="ltProgressPct"   style="font-size:12px;color:var(--muted)">0%</span>
+        </div>
+        <div style="height:4px;background:var(--input-bg);border-radius:2px;overflow:hidden">
+          <div id="ltProgressBar" style="height:100%;background:var(--accent);width:0%;transition:width 0.15s"></div>
+        </div>
+      </div>
+      <!-- Results -->
+      <div id="ltResults" style="display:none"></div>
+    </div>
+  </div>
+
+  </div><!-- /#tab-rest -->
+
+  </div><!-- /.container -->
+
+<footer>
+  <div class="license">
+    &copy; 2026 Outbox Contributors &nbsp;&middot;&nbsp;
+    Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" style="color:var(--accent);text-decoration:none">Apache 2.0</a>
+    or <a href="https://opensource.org/licenses/MIT" target="_blank" style="color:var(--accent);text-decoration:none">MIT</a> license
+    <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;font-size:10px;color:var(--muted);max-width:600px;margin-left:auto;margin-right:auto">
+      Built on open-source components:
+      Spring Boot &amp; Spring Kafka (Apache 2.0) &nbsp;&middot;&nbsp;
+      Apache Avro (Apache 2.0) &nbsp;&middot;&nbsp;
+      Confluent kafka-avro-serializer &amp; Schema Registry Client (<a href="https://www.confluent.io/confluent-community-license" target="_blank" style="color:var(--accent);text-decoration:none">Confluent Community License</a>) &nbsp;&middot;&nbsp;
+      DataFaker (Apache 2.0) &nbsp;&middot;&nbsp;
+      Reflections (Apache 2.0)
+    </div>
+  </div>
+</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let currentMode = 'auto';
+
+  // --- Theme toggle ---
+  const body = document.body;
+  const isLight = () => body.classList.contains('light');
+  const stored = localStorage.getItem('theme');
+  const systemLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  if (stored === 'light' || (!stored && systemLight)) {
+    body.classList.add('light');
+    $('themeToggle').textContent = '☾ Dark';
+  }
+  $('themeToggle').addEventListener('click', () => {
+    body.classList.toggle('light');
+    const light = isLight();
+    $('themeToggle').textContent = light ? '☾ Dark' : '☀ Light';
+    localStorage.setItem('theme', light ? 'light' : 'dark');
+  });
+
+  // --- Connection settings ---
+  function loadConnection() {
+    fetch('/api/connection')
+      .then(r => r.json())
+      .then(s => {
+        $('bootstrapServers').value  = s.bootstrapServers  || '';
+        $('schemaRegistryUrl').value = s.schemaRegistryUrl || '';
+        $('securityProtocol').value  = s.securityProtocol  || 'PLAINTEXT';
+        $('saslMechanism').value     = s.saslMechanism     || 'PLAIN';
+        $('kafkaApiKey').value    = s.kafkaApiKey    || '';
+        $('kafkaApiSecret').value = s.kafkaApiSecret || '';
+        $('saslJaasConfig').value = s.saslJaasConfig || '';
+        $('srCredentialsSource').value = s.srCredentialsSource || 'USER_INFO';
+        $('srUsername').value     = s.srUsername     || '';
+        $('srPassword').value     = s.srPassword     || '';
+        $('autoRegisterSchemas').checked = s.autoRegisterSchemas !== false;
+        toggleSrUserInfoFields();
+        $('useLatestVersion').checked    = s.useLatestVersion === true;
+        toggleAuthSection();
+      })
+      .catch(() => setStatus('DISCONNECTED'));
+
+    fetch('/api/connection/status')
+      .then(r => r.json())
+      .then(s => setStatus(s.status))
+      .catch(() => setStatus('DISCONNECTED'));
+  }
+
+  function setStatus(s) {
+    const configured = s === 'CONFIGURED';
+    $('statusDot').className   = 'status-dot ' + (configured ? 'configured' : 'disconnected');
+    $('statusLabel').className = 'status-label' + (configured ? ' configured' : '');
+    $('statusLabel').textContent = configured ? 'Configured' : 'Disconnected';
+    $('statusNote').textContent  = configured
+      ? '— producer factory ready, TCP connects on first Send'
+      : '— configure settings and click Apply';
+    $('disconnectConn').disabled = !configured;
+  }
+
+  function toggleAuthSection() {
+    $('authSection').style.display =
+      ['SASL_SSL', 'SASL_PLAINTEXT'].includes($('securityProtocol').value) ? 'block' : 'none';
+  }
+
+  function toggleSrUserInfoFields() {
+    $('srUserInfoFields').style.display =
+      $('srCredentialsSource').value === 'SASL_INHERIT' ? 'none' : 'flex';
+  }
+
+  $('securityProtocol').addEventListener('change', toggleAuthSection);
+  $('srCredentialsSource').addEventListener('change', toggleSrUserInfoFields);
+
+  $('applyConn').addEventListener('click', async () => {
+    const btn = $('applyConn');
+    btn.disabled = true; btn.textContent = 'Applying…';
+    const settings = {
+      bootstrapServers:  $('bootstrapServers').value.trim(),
+      schemaRegistryUrl: $('schemaRegistryUrl').value.trim(),
+      securityProtocol:  $('securityProtocol').value,
+      saslMechanism:     $('saslMechanism').value.trim(),
+      kafkaApiKey:    $('kafkaApiKey').value.trim(),
+      kafkaApiSecret: $('kafkaApiSecret').value,
+      saslJaasConfig: $('saslJaasConfig').value.trim(),
+      srCredentialsSource: $('srCredentialsSource').value,
+      srUsername:     $('srUsername').value.trim(),
+      srPassword:     $('srPassword').value,
+      autoRegisterSchemas: $('autoRegisterSchemas').checked,
+      useLatestVersion:    $('useLatestVersion').checked,
+    };
+    try {
+      const r = await fetch('/api/connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+      const data = await r.json();
+      setStatus(data.status);
+    } catch (e) {
+      setStatus('DISCONNECTED');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Apply Connection';
+    }
+  });
+
+  $('disconnectConn').addEventListener('click', async () => {
+    const btn = $('disconnectConn');
+    btn.disabled = true; btn.textContent = 'Disconnecting…';
+    try {
+      await fetch('/api/connection', { method: 'DELETE' });
+    } finally {
+      setStatus('DISCONNECTED');
+      btn.textContent = 'Disconnect';
+    }
+  });
+
+  // Collapse/expand connection card
+  $('connToggle').addEventListener('click', () => {
+    const body = $('connBody');
+    const collapsed = body.classList.toggle('collapsed');
+    $('connToggle').textContent = collapsed ? '▼ Expand' : '▲ Collapse';
+  });
+
+  // --- Avro classes ---
+  fetch('/api/avro/classes')
+    .then(r => r.json())
+    .then(classes => {
+      const opts = classes.map(c => `<option value="${c}">${c}</option>`).join('');
+      const none = '<option>(none discovered — check avro.scan-package)</option>';
+      $('className').innerHTML    = opts || none;
+      $('keyClassName').innerHTML = opts || none;
+      refreshSchemaPreview();
+    })
+    .catch(e => console.error('Failed to load classes', e));
+
+  function refreshSchemaPreview() {
+    if (currentMode !== 'auto') return;
+    const cls = $('className').value;
+    if (!cls) return;
+    fetch(`/api/avro/schema/${encodeURIComponent(cls)}`)
+      .then(r => r.text())
+      .then(schema => {
+        $('schemaPreview').textContent = fmtJson(schema);
+        $('schemaPreviewWrapper').style.display = 'block';
+      })
+      .catch(() => { $('schemaPreviewWrapper').style.display = 'none'; });
+  }
+
+  $('className').addEventListener('change', () => {
+    refreshSchemaPreview();
+    $('samplePreview').style.display = 'none'; // reset sample when class changes
+  });
+
+  $('generateSampleBtn').addEventListener('click', async () => {
+    const btn = $('generateSampleBtn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try {
+      const valueCls = $('className').value;
+      const valueRes = await fetch(`/api/avro/generate/${encodeURIComponent(valueCls)}`);
+      const valueJson = await valueRes.text();
+      $('sampleValue').textContent = fmtJson(valueJson);
+      $('samplePreview').style.display = 'block';
+    } catch (e) {
+      $('sampleValue').textContent = 'Error: ' + e.message;
+      $('samplePreview').style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Generate Sample Value';
+    }
+  });
+
+  $('generateKeyBtn').addEventListener('click', async () => {
+    const btn = $('generateKeyBtn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try {
+      const keyCls = $('keyClassName').value;
+      const keyRes = await fetch(`/api/avro/generate/${encodeURIComponent(keyCls)}`);
+      const keyJson = await keyRes.text();
+      $('keySampleJson').textContent = fmtJson(keyJson);
+      $('keySamplePreview').style.display = 'block';
+    } catch (e) {
+      $('keySampleJson').textContent = 'Error: ' + e.message;
+      $('keySamplePreview').style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Generate Sample Key';
+    }
+  });
+
+  // --- Key schema preview ---
+  function refreshKeySchemaPreview() {
+    if (currentKeyType !== 'avro') return;
+    const cls = $('keyClassName').value;
+    if (!cls) return;
+    fetch(`/api/avro/schema/${encodeURIComponent(cls)}`)
+      .then(r => r.text())
+      .then(schema => {
+        $('keySchemaPreview').textContent = fmtJson(schema);
+        $('keySchemaPreviewWrapper').style.display = 'block';
+      })
+      .catch(() => { $('keySchemaPreviewWrapper').style.display = 'none'; });
+  }
+
+  $('keyClassName').addEventListener('change', () => {
+    refreshKeySchemaPreview();
+    $('keySamplePreview').style.display = 'none';
+  });
+
+  // --- Key type toggle (String / Avro) ---
+  let currentKeyType = 'string';
+  document.querySelectorAll('[data-keytype]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentKeyType = btn.dataset.keytype;
+      document.querySelectorAll('[data-keytype]').forEach(b => b.classList.toggle('active', b === btn));
+      $('keyStringPanel').style.display  = currentKeyType === 'string'  ? 'block' : 'none';
+      $('keyAvroPanel').style.display    = currentKeyType === 'avro'    ? 'block' : 'none';
+      $('keyGenericPanel').style.display = currentKeyType === 'generic' ? 'block' : 'none';
+      if (currentKeyType === 'avro') refreshKeySchemaPreview();
+    });
+  });
+
+  // --- Key mode toggle (Auto / Manual) ---
+  let currentKeyMode = 'auto';
+  document.querySelectorAll('[data-keymode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentKeyMode = btn.dataset.keymode;
+      document.querySelectorAll('[data-keymode]').forEach(b => b.classList.toggle('active', b === btn));
+      $('keyManualPanel').style.display = currentKeyMode === 'manual' ? 'block' : 'none';
+    });
+  });
+
+  // --- Mode tabs (value only — scoped to [data-mode] to avoid conflicting with key type/mode buttons) ---
+  document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentMode = btn.dataset.mode;
+      document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.mode-panel').forEach(p => {
+        p.classList.toggle('active', p.id === `panel-${currentMode}`);
+      });
+      $('classNameField').style.display = currentMode === 'generic' ? 'none' : '';
+      refreshSchemaPreview();
+    });
+  });
+
+  // --- Hybrid overrides ---
+  // --- Kafka Headers ---
+  $('headersToggle').addEventListener('click', () => {
+    const open = $('headersBody').style.display === 'none';
+    $('headersBody').style.display = open ? 'block' : 'none';
+    $('headersToggle').textContent = open ? '▲ Hide' : '▼ Show';
+  });
+
+  function addHeaderRow() {
+    const row = document.createElement('div');
+    row.className = 'overrides-row';
+    row.style.marginBottom = '6px';
+    row.innerHTML = `
+      <input class="hdr-name"  placeholder="Header name"  style="font-size:13px" />
+      <input class="hdr-value" placeholder="Header value" style="font-size:13px" />
+      <button type="button" class="add-row" style="padding:4px 8px" onclick="this.closest('.overrides-row').remove()">✕</button>`;
+    $('headersList').appendChild(row);
+  }
+
+  function collectHeaders() {
+    return Array.from(document.querySelectorAll('#headersList .overrides-row'))
+      .map(r => ({ name: r.querySelector('.hdr-name').value.trim(), value: r.querySelector('.hdr-value').value }))
+      .filter(h => h.name);
+  }
+
+  $('addHeaderBtn').addEventListener('click', addHeaderRow);
+
+  function addOverrideRow(name = '', value = '') {
+    const row = document.createElement('div');
+    row.className = 'overrides-row';
+    row.innerHTML = `
+      <input class="ov-name"  placeholder="field name"  value="${name}">
+      <input class="ov-value" placeholder='value (string, number, true/false, null)' value="${value}">
+      <button type="button" title="Remove">×</button>`;
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    $('overrides').appendChild(row);
+  }
+  $('addOverride').addEventListener('click', () => addOverrideRow());
+  addOverrideRow();
+
+  function collectOverrides() {
+    const out = {};
+    document.querySelectorAll('#overrides .overrides-row').forEach(r => {
+      const k = r.querySelector('.ov-name').value.trim();
+      const raw = r.querySelector('.ov-value').value.trim();
+      if (!k) return;
+      let v;
+      if (raw === 'null') v = null;
+      else if (raw === 'true') v = true;
+      else if (raw === 'false') v = false;
+      else if (/^-?\d+$/.test(raw)) v = parseInt(raw, 10);
+      else if (/^-?\d*\.\d+$/.test(raw)) v = parseFloat(raw);
+      else if (raw.startsWith('{') || raw.startsWith('[')) {
+        try { v = JSON.parse(raw); } catch { v = raw; }
+      } else v = raw;
+      out[k] = v;
+    });
+    return out;
+  }
+
+  // --- Referenced Schemas ---
+  $('refSchemasToggle').addEventListener('click', () => {
+    const body = $('refSchemasBody');
+    const open = body.style.display === 'none';
+    body.style.display = open ? 'block' : 'none';
+    $('refSchemasChevron').textContent = open ? '▲' : '▼';
+  });
+
+  function addRefSchemaRow() {
+    const row = document.createElement('div');
+    row.className = 'ref-schema-row';
+    row.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-radius:4px;padding:8px';
+    row.innerHTML = `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:2px">
+        <button type="button" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px;line-height:1" onclick="this.closest('.ref-schema-row').remove()">✕ Remove</button>
+      </div>
+      <textarea class="ref-schema" rows="4" placeholder='{"type":"record","name":"Address","namespace":"com.example","fields":[...]}' style="width:100%;box-sizing:border-box;font-size:12px"></textarea>`;
+    $('refSchemasList').appendChild(row);
+  }
+
+  $('addRefSchema').addEventListener('click', addRefSchemaRow);
+
+  function collectRefSchemas() {
+    return Array.from(document.querySelectorAll('#refSchemasList .ref-schema-row'))
+      .map(r => ({ schema: r.querySelector('.ref-schema').value.trim() }))
+      .filter(r => r.schema);
+  }
+
+  // --- Validate ---
+  $('validateGenericBtn').addEventListener('click', async () => {
+    const btn = $('validateGenericBtn');
+    const result = $('validateResult');
+    btn.disabled = true; btn.textContent = 'Validating…';
+    result.textContent = '';
+    try {
+      const r = await fetch('/api/avro/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schema: $('genericSchema').value,
+          payload: $('genericPayload').value,
+          references: collectRefSchemas()
+        })
+      });
+      const data = await r.json();
+      if (data.valid) {
+        result.innerHTML = '<span style="color:#4caf50;font-weight:600">✓ Valid</span>';
+      } else {
+        result.innerHTML = `<span style="color:#f44336;font-weight:600">✗ Invalid</span> <span style="color:var(--muted)">${data.error || ''}</span>`;
+      }
+    } catch (e) {
+      result.innerHTML = `<span style="color:#f44336">Network error: ${e.message}</span>`;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Validate';
+    }
+  });
+
+  // --- Send ---
+  $('sendBtn').addEventListener('click', async () => {
+    const btn = $('sendBtn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+    const body = {
+      className: $('className').value,
+      topic:     $('topic').value,
+      count:     parseInt($('count').value, 10) || 1,
+      // Key
+      key:              currentKeyType === 'string'  ? ($('key').value || null) : null,
+      keyClassName:     currentKeyType === 'avro'    ? $('keyClassName').value : null,
+      keyMode:          currentKeyMode,
+      keyJsonPayload:   currentKeyMode === 'manual'  ? $('keyJsonPayload').value : null,
+      keySchema:        currentKeyType === 'generic' ? $('genericKeySchema').value : null,
+      keyGenericPayload:currentKeyType === 'generic' ? $('genericKeyPayload').value : null,
+      keyReferences:    currentKeyType === 'generic' ? collectRefSchemas() : null,
+      headers:          collectHeaders(),
+    };
+    let endpoint;
+    if (currentMode === 'auto') {
+      endpoint = '/api/produce/auto';
+    } else if (currentMode === 'manual') {
+      endpoint = '/api/produce/manual';
+      body.jsonPayload = $('jsonPayload').value;
+    } else if (currentMode === 'generic') {
+      endpoint = '/api/produce/generic';
+      body.valueSchema       = $('genericSchema').value;
+      body.jsonPayload       = $('genericPayload').value;
+      body.valueReferences   = collectRefSchemas();
+    } else {
+      endpoint = '/api/produce/hybrid';
+      body.overrides = collectOverrides();
+    }
+    try {
+      const r = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      $('resultCard').style.display = 'block';
+      $('result').innerHTML = data.success ? renderSuccess(data) : renderError(data.message);
+    } catch (e) {
+      $('resultCard').style.display = 'block';
+      $('result').innerHTML = renderError('Network error: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send';
+    }
+  });
+
+  function renderError(msg) {
+    return `<div class="result-err">${escHtml(msg)}</div>`;
+  }
+
+  function renderSuccess(data) {
+    const summary = `<div class="result-summary">✓ ${escHtml(data.message)}</div>`;
+    const blocks = (data.records || []).map((rec, i) => {
+      const meta = `
+        <div class="record-meta">
+          <span>Record <strong>#${i + 1}</strong></span>
+          <span>Topic <strong>${escHtml(rec.topic)}</strong></span>
+          <span>Partition <strong>${rec.partition}</strong></span>
+          <span>Offset <strong>${rec.offset}</strong></span>
+        </div>`;
+
+      const keySection = rec.keyPayload
+        ? `<div class="record-section">
+             <div class="record-section-label">Key (Avro)</div>
+             <pre class="record-json">${escHtml(fmtJson(rec.keyPayload))}</pre>
+           </div>`
+        : '';
+
+      const valSection = rec.payload
+        ? `<div class="record-section">
+             <div class="record-section-label">Value</div>
+             <pre class="record-json">${escHtml(fmtJson(rec.payload))}</pre>
+           </div>`
+        : '';
+
+      return `<div class="record-block">${meta}${keySection}${valSection}</div>`;
+    }).join('');
+    return summary + blocks;
+  }
+
+  function fmtJson(str) {
+    try { return JSON.stringify(JSON.parse(str), null, 2); } catch { return str; }
+  }
+
+  function prettyJson(id) {
+    const ta = $(id);
+    const formatted = fmtJson(ta.value);
+    if (formatted !== ta.value) ta.value = formatted;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // --- Top-level tabs ---
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.tab-panel').forEach(p => {
+        p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab);
+      });
+    });
+  });
+
+  // --- REST Testing ---
+  function addRestHeaderRow(k = '', v = '') {
+    const row = document.createElement('div');
+    row.className = 'overrides-row';
+    row.innerHTML = `
+      <input class="rh-name"  placeholder="Header name"  value="${escHtml(k)}">
+      <input class="rh-value" placeholder="Header value" value="${escHtml(v)}">
+      <button type="button" title="Remove">×</button>`;
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    $('restHeaders').appendChild(row);
+  }
+  $('addRestHeader').addEventListener('click', () => addRestHeaderRow());
+  addRestHeaderRow('Content-Type', 'application/json');
+
+  function collectRestHeaders() {
+    const out = {};
+    document.querySelectorAll('#restHeaders .overrides-row').forEach(r => {
+      const k = r.querySelector('.rh-name').value.trim();
+      const v = r.querySelector('.rh-value').value.trim();
+      if (k) out[k] = v;
+    });
+    return out;
+  }
+
+  // Show/hide body field based on method
+  $('restMethod').addEventListener('change', () => {
+    const method = $('restMethod').value;
+    $('restBodyField').style.display = ['POST','PUT','PATCH'].includes(method) ? 'block' : 'none';
+  });
+  $('restBodyField').style.display = 'none'; // GET is default
+
+  $('restSendBtn').addEventListener('click', async () => {
+    const btn = $('restSendBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const rawHeaders = collectRestHeaders();
+      const subHeaders = {};
+      Object.entries(rawHeaders).forEach(([k, v]) => subHeaders[k] = substituteVars(v));
+      const payload = {
+        method:  $('restMethod').value,
+        url:     substituteVars($('restUrl').value.trim()),
+        headers: subHeaders,
+        body:    ['POST','PUT','PATCH'].includes($('restMethod').value) ? substituteVars($('restBody').value) : null,
+      };
+      const r = await fetch('/api/rest/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      renderRestResult(data);
+      // log to history
+      const histHeaders = Object.entries(payload.headers || {}).map(([k, v]) => ({ key: k, value: v }));
+      appendHistory({
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        method: payload.method,
+        url: payload.url,
+        requestHeaders: histHeaders,
+        requestBody: payload.body || '',
+        responseStatus: data.status || 0,
+        responseStatusText: data.statusText || '',
+        responseDurationMs: data.durationMs || 0,
+        success: data.success || false,
+        responseBodyPreview: (data.body || '').slice(0, 500),
+      });
+    } catch (e) {
+      renderRestResult({ success: false, error: 'Network error: ' + e.message });
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send';
+    }
+  });
+
+  function renderRestResult(data) {
+    $('restResultCard').style.display = 'block';
+    if (data.error && !data.status) {
+      $('restStatusBadge').textContent = 'Error';
+      $('restStatusBadge').style.cssText = `background:var(--err);color:#fff;font-size:13px;font-weight:600;padding:3px 10px;border-radius:2px`;
+      $('restDuration').textContent = data.durationMs != null ? data.durationMs + ' ms' : '';
+      $('restRespBody').textContent = data.error;
+      $('restRespHeaders').style.display = 'none';
+      return;
+    }
+    const s = data.status;
+    const color = s >= 200 && s < 300 ? 'var(--ok)' : s >= 400 ? 'var(--err)' : '#e5a00d';
+    $('restStatusBadge').textContent = data.statusText || s;
+    $('restStatusBadge').style.cssText = `background:${color};color:#fff;font-size:13px;font-weight:600;padding:3px 10px;border-radius:2px`;
+    $('restDuration').textContent = data.durationMs + ' ms';
+    $('restRespBody').textContent = fmtJson(data.body || '');
+    if (data.headers && Object.keys(data.headers).length) {
+      $('restRespHeadersJson').textContent = JSON.stringify(data.headers, null, 2);
+    }
+  }
+
+  $('restHeadersToggle').addEventListener('click', () => {
+    const visible = $('restRespHeaders').style.display !== 'none';
+    $('restRespHeaders').style.display = visible ? 'none' : 'block';
+    $('restHeadersToggle').textContent = visible ? '▼ Show Headers' : '▲ Hide Headers';
+  });
+
+  $('restToggle').addEventListener('click', () => {
+    const collapsed = $('restBody').classList.toggle('collapsed');
+    $('restToggle').textContent = collapsed ? '▼ Expand' : '▲ Collapse';
+  });
+
+  // ── Environments ─────────────────────────────────────────────────────
+  async function fetchEnvironments() {
+    try { const r = await fetch('/api/environments'); return r.ok ? r.json() : []; } catch { return []; }
+  }
+  async function postEnvironments(data) {
+    await fetch('/api/environments', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+    });
+  }
+
+  function substituteVars(str) {
+    if (!str) return str;
+    const sel = $('envSelector');
+    if (!sel || !sel.value || sel.value === '__none__') return str;
+    const vars = JSON.parse(sel.options[sel.selectedIndex]?.dataset.vars || '{}');
+    return str.replace(/\{\{([^}]+)\}\}/g, (_, k) => vars[k.trim()] !== undefined ? vars[k.trim()] : `{{${k}}}`);
+  }
+
+  function renderEnvEditor(variables) {
+    const editor = $('envEditor');
+    editor.innerHTML = '';
+    if (!variables || !variables.length) {
+      editor.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:2px 0 8px">No variables yet — click <strong>+ Add variable</strong> below.</div>';
+      return;
+    }
+    variables.forEach((v, i) => {
+      const row = document.createElement('div');
+      row.className = 'overrides-row';
+      row.style.marginBottom = '8px';
+      row.innerHTML = `<input class="env-key"   placeholder="variable_name" value="${escHtml(v.key   || '')}">
+        <input class="env-value" placeholder="value"         value="${escHtml(v.value || '')}">
+        <button type="button" title="Remove">×</button>`;
+      row.querySelector('button').addEventListener('click', () => row.remove());
+      editor.appendChild(row);
+    });
+  }
+
+  async function loadEnvSelector() {
+    const envs = await fetchEnvironments();
+    const sel = $('envSelector');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="__none__">No environment</option>';
+    envs.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.name;
+      const vars = {};
+      (e.variables || []).forEach(v => { if (v.key) vars[v.key] = v.value; });
+      opt.dataset.vars = JSON.stringify(vars);
+      opt.textContent = e.name;
+      if (e.active) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+    // render editor for selected env
+    const active = envs.find(e => sel.value !== '__none__' && e.name === sel.value) || envs.find(e => e.active);
+    $('deleteEnvBtn').style.display = active ? 'inline-block' : 'none';
+    renderEnvEditor(active ? active.variables : []);
+  }
+
+  $('envSelector').addEventListener('change', async () => {
+    const envs = await fetchEnvironments();
+    const sel = $('envSelector');
+    const env = envs.find(e => e.name === sel.value);
+    $('deleteEnvBtn').style.display = env ? 'inline-block' : 'none';
+    renderEnvEditor(env ? env.variables : []);
+  });
+
+  $('newEnvBtn').addEventListener('click', () => {
+    const name = prompt('Environment name (e.g. Development, Staging, Production):');
+    if (!name || !name.trim()) return;
+    $('envSelector').innerHTML += `<option value="${escHtml(name.trim())}" selected>${escHtml(name.trim())}</option>`;
+    $('envSelector').value = name.trim();
+    $('deleteEnvBtn').style.display = 'inline-block';
+    renderEnvEditor([]);
+  });
+
+  $('addEnvVarBtn').addEventListener('click', () => {
+    const editor = $('envEditor');
+    // remove empty state message if present
+    if (editor.querySelector('div')) editor.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'overrides-row';
+    row.style.marginBottom = '8px';
+    row.innerHTML = `<input class="env-key"   placeholder="variable_name" value="">
+      <input class="env-value" placeholder="value" value="">
+      <button type="button" title="Remove">×</button>`;
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    editor.appendChild(row);
+    row.querySelector('.env-key').focus();
+  });
+
+  $('saveEnvBtn').addEventListener('click', async () => {
+    const sel = $('envSelector');
+    if (sel.value === '__none__') { alert('Select or create an environment first.'); return; }
+    const variables = [];
+    document.querySelectorAll('#envEditor .overrides-row').forEach(r => {
+      const k = r.querySelector('.env-key').value.trim();
+      const v = r.querySelector('.env-value').value.trim();
+      if (k) variables.push({ key: k, value: v });
+    });
+    const envs = await fetchEnvironments();
+    const existing = envs.find(e => e.name === sel.value);
+    if (existing) {
+      existing.variables = variables;
+      existing.active = true;
+      envs.forEach(e => { if (e.name !== sel.value) e.active = false; });
+    } else {
+      envs.forEach(e => e.active = false);
+      envs.push({ name: sel.value, active: true, variables });
+    }
+    await postEnvironments(envs);
+    // update vars in selector option
+    const opt = [...sel.options].find(o => o.value === sel.value);
+    if (opt) { const m = {}; variables.forEach(v => { if(v.key) m[v.key]=v.value; }); opt.dataset.vars = JSON.stringify(m); }
+    $('saveEnvBtn').textContent = 'Saved ✓';
+    setTimeout(() => $('saveEnvBtn').textContent = 'Save', 1500);
+  });
+
+  $('deleteEnvBtn').addEventListener('click', async () => {
+    const sel = $('envSelector');
+    if (!confirm(`Delete environment "${sel.value}"?`)) return;
+    const envs = await fetchEnvironments();
+    const idx = envs.findIndex(e => e.name === sel.value);
+    if (idx >= 0) envs.splice(idx, 1);
+    await postEnvironments(envs);
+    await loadEnvSelector();
+  });
+
+  $('envToggle').addEventListener('click', () => {
+    const collapsed = $('envBody').classList.toggle('collapsed');
+    $('envToggle').textContent = collapsed ? '▼ Expand' : '▲ Collapse';
+  });
+
+  loadEnvSelector();
+
+  // ── REST Collections (file-backed via /api/collections) ─────────────
+  const METHOD_COLORS = { GET:'#16825d', POST:'#0e639c', PUT:'#b07800', PATCH:'#5f3dc4', DELETE:'#cd3131' };
+
+  async function fetchCollections() {
+    try {
+      const r = await fetch('/api/collections');
+      return r.ok ? r.json() : [];
+    } catch { return []; }
+  }
+
+  async function postCollections(data) {
+    await fetch('/api/collections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async function renderCollections() {
+    const data = await fetchCollections();
+    const list = $('collectionsList');
+    list.innerHTML = '';
+
+    const btnStyle  = 'background:transparent;border:none;cursor:pointer;padding:2px 5px;width:auto;font-size:12px;color:var(--muted);line-height:1;';
+    const activeCols = data.filter(c => !c.hidden);
+
+    // collect recycle bin items
+    const binItems = []; // { type:'collection'|'request', collName, req? }
+    data.filter(c => c.hidden).forEach(c => binItems.push({ type: 'collection', coll: c }));
+    data.filter(c => !c.hidden).forEach(c =>
+      (c.requests || []).filter(r => r.hidden).forEach(r => binItems.push({ type: 'request', collName: c.name, req: r }))
+    );
+
+    if (!activeCols.length && !binItems.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:2px 0">No saved requests yet — fill in a request above and click <strong>Save</strong>.</div>';
+    }
+
+    activeCols.forEach(coll => {
+      const activeReqs = (coll.requests || []).filter(r => !r.hidden);
+      const group = document.createElement('div');
+      group.className = 'coll-group';
+
+      const hdr = document.createElement('div');
+      hdr.className = 'coll-group-header';
+      hdr.innerHTML = `<span class="coll-arrow" style="transform:rotate(90deg)">▶</span>
+        <span class="coll-name">${escHtml(coll.name)}</span>
+        <span class="coll-count">${activeReqs.length}</span>
+        <button class="coll-hide" title="Remove from view" style="${btnStyle}">✕</button>
+        <button class="coll-del"  title="Delete permanently" style="${btnStyle}font-size:13px;">🗑</button>`;
+
+      const body = document.createElement('div');
+      body.className = 'coll-group-body open';
+
+      activeReqs.forEach((req) => {
+        const item = document.createElement('div');
+        item.className = 'coll-item';
+        const color = METHOD_COLORS[req.method] || '#858585';
+        item.innerHTML = `<span class="method-pill" style="background:${color}">${escHtml(req.method)}</span>
+          <span class="item-name">${escHtml(req.name)}</span>
+          <span class="item-url">${escHtml(req.url || '')}</span>
+          <button class="item-hide" title="Remove from view" style="${btnStyle}">✕</button>
+          <button class="item-del"  title="Delete permanently" style="${btnStyle}font-size:13px;">🗑</button>`;
+
+        item.querySelector('.item-hide').addEventListener('click', async e => {
+          e.stopPropagation();
+          const d = await fetchCollections();
+          const c = d.find(x => x.name === coll.name);
+          const r = c && c.requests.find(x => x.name === req.name);
+          if (r) r.hidden = true;
+          await postCollections(d); renderCollections();
+        });
+        item.querySelector('.item-del').addEventListener('click', async e => {
+          e.stopPropagation();
+          if (!confirm(`Delete "${req.name}" permanently?`)) return;
+          const d = await fetchCollections();
+          const c = d.find(x => x.name === coll.name);
+          if (c) c.requests = c.requests.filter(x => x.name !== req.name);
+          await postCollections(d); renderCollections();
+        });
+        item.addEventListener('click', e => {
+          if (e.target.closest('.item-hide,.item-del')) return;
+          loadRestRequest(req);
+        });
+        body.appendChild(item);
+      });
+
+      hdr.addEventListener('click', e => {
+        if (e.target.closest('.coll-hide,.coll-del')) return;
+        const open = body.classList.toggle('open');
+        hdr.querySelector('.coll-arrow').style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+      });
+      hdr.querySelector('.coll-hide').addEventListener('click', async e => {
+        e.stopPropagation();
+        const d = await fetchCollections();
+        const c = d.find(x => x.name === coll.name);
+        if (c) c.hidden = true;
+        await postCollections(d); renderCollections();
+      });
+      hdr.querySelector('.coll-del').addEventListener('click', async e => {
+        e.stopPropagation();
+        if (!confirm(`Delete collection "${coll.name}" and all its requests permanently?`)) return;
+        const d = await fetchCollections();
+        const idx = d.findIndex(x => x.name === coll.name);
+        if (idx >= 0) d.splice(idx, 1);
+        await postCollections(d); renderCollections();
+      });
+
+      group.appendChild(hdr);
+      group.appendChild(body);
+      list.appendChild(group);
+    });
+
+    // Recycle Bin
+    if (binItems.length) {
+      const section = document.createElement('div');
+      section.style.cssText = 'margin-top:10px;border:1px solid var(--border);border-radius:3px;overflow:hidden;';
+
+      const toggle = document.createElement('div');
+      toggle.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel-2);cursor:pointer;user-select:none;';
+      toggle.innerHTML = `<span>🗑</span>
+        <span style="flex:1;font-size:12px;font-weight:500;color:var(--muted)">Recycle Bin</span>
+        <span style="font-size:11px;color:var(--muted);background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:1px 6px">${binItems.length}</span>
+        <span class="bin-arrow" style="font-size:10px;color:var(--muted)">▶</span>`;
+
+      const binBody = document.createElement('div');
+      binBody.style.display = 'none';
+      toggle.addEventListener('click', () => {
+        const open = binBody.style.display !== 'none';
+        binBody.style.display = open ? 'none' : 'block';
+        toggle.querySelector('.bin-arrow').style.transform = open ? '' : 'rotate(90deg)';
+      });
+
+      binItems.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px 6px 14px;border-top:1px solid var(--border);';
+        if (item.type === 'collection') {
+          row.innerHTML = `<span style="font-size:11px;color:var(--muted);margin-right:2px">📁</span>
+            <span style="flex:1;font-size:12px;color:var(--muted)">${escHtml(item.coll.name)}</span>
+            <span style="font-size:11px;color:var(--muted)">${(item.coll.requests||[]).length} req</span>
+            <button class="apply-btn" style="width:auto;padding:3px 10px;font-size:11px">Restore</button>
+            <button style="${btnStyle}font-size:13px" title="Delete permanently">🗑</button>`;
+          row.querySelector('.apply-btn').addEventListener('click', async () => {
+            const d = await fetchCollections();
+            const c = d.find(x => x.name === item.coll.name);
+            if (c) delete c.hidden;
+            await postCollections(d); renderCollections();
+          });
+          row.querySelectorAll('button')[1].addEventListener('click', async () => {
+            if (!confirm(`Permanently delete collection "${item.coll.name}"?`)) return;
+            const d = await fetchCollections();
+            const idx = d.findIndex(x => x.name === item.coll.name);
+            if (idx >= 0) d.splice(idx, 1);
+            await postCollections(d); renderCollections();
+          });
+        } else {
+          const color = METHOD_COLORS[item.req.method] || '#858585';
+          row.innerHTML = `<span class="method-pill" style="background:${color};font-size:9px;padding:1px 5px">${escHtml(item.req.method)}</span>
+            <span style="flex:1;font-size:12px;color:var(--muted)">${escHtml(item.req.name)}</span>
+            <span style="font-size:11px;color:var(--muted)">${escHtml(item.collName)}</span>
+            <button class="apply-btn" style="width:auto;padding:3px 10px;font-size:11px">Restore</button>
+            <button style="${btnStyle}font-size:13px" title="Delete permanently">🗑</button>`;
+          row.querySelector('.apply-btn').addEventListener('click', async () => {
+            const d = await fetchCollections();
+            const c = d.find(x => x.name === item.collName);
+            const r = c && c.requests.find(x => x.name === item.req.name);
+            if (r) delete r.hidden;
+            await postCollections(d); renderCollections();
+          });
+          row.querySelectorAll('button')[1].addEventListener('click', async () => {
+            if (!confirm(`Permanently delete "${item.req.name}"?`)) return;
+            const d = await fetchCollections();
+            const c = d.find(x => x.name === item.collName);
+            if (c) c.requests = c.requests.filter(x => x.name !== item.req.name);
+            await postCollections(d); renderCollections();
+          });
+        }
+        binBody.appendChild(row);
+      });
+
+      section.appendChild(toggle);
+      section.appendChild(binBody);
+      list.appendChild(section);
+    }
+  }
+
+  function loadRestRequest(req) {
+    $('restResultCard').style.display = 'none';
+    $('restRespBody').textContent = '';
+    $('restRespHeadersJson').textContent = '';
+    $('restMethod').value = req.method;
+    $('restUrl').value = req.url || '';
+    $('restBodyField').style.display = ['POST','PUT','PATCH'].includes(req.method) ? 'block' : 'none';
+    $('restBody').value = req.body || '';
+    $('restHeaders').innerHTML = '';
+    (req.headers || []).forEach(h => addRestHeaderRow(h.key, h.value));
+    if (!req.headers || !req.headers.length) addRestHeaderRow('Content-Type', 'application/json');
+    document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-tab="rest"]').classList.add('active');
+    $('tab-rest').classList.add('active');
+    $('restUrl').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Save dialog
+  $('openSaveBtn').addEventListener('click', async () => {
+    const d = $('saveDialog');
+    if (d.style.display !== 'none') { d.style.display = 'none'; return; }
+    const dl = $('existingCollList');
+    dl.innerHTML = '';
+    (await fetchCollections()).forEach(c => {
+      const o = document.createElement('option'); o.value = c.name; dl.appendChild(o);
+    });
+    d.style.display = 'block';
+    $('saveCollName').focus();
+  });
+  $('cancelSaveBtn').addEventListener('click', () => { $('saveDialog').style.display = 'none'; });
+  $('confirmSaveBtn').addEventListener('click', async () => {
+    const collName = $('saveCollName').value.trim();
+    const reqName  = $('saveReqName').value.trim();
+    if (!collName || !reqName) { alert('Please enter both a collection name and request name.'); return; }
+    const headers = [];
+    document.querySelectorAll('#restHeaders .overrides-row').forEach(r => {
+      const k = r.querySelector('.rh-name').value.trim();
+      const v = r.querySelector('.rh-value').value.trim();
+      if (k) headers.push({ key: k, value: v });
+    });
+    const method = $('restMethod').value;
+    const req = { name: reqName, method, url: $('restUrl').value.trim(), headers,
+                  body: ['POST','PUT','PATCH'].includes(method) ? $('restBody').value : '' };
+    const data = await fetchCollections();
+    const existing = data.find(c => c.name === collName);
+    if (existing) {
+      const dup = existing.requests.findIndex(r => r.name === reqName);
+      if (dup >= 0) existing.requests[dup] = req; else existing.requests.push(req);
+    } else {
+      data.push({ name: collName, requests: [req] });
+    }
+    await postCollections(data);
+    renderCollections();
+    $('saveDialog').style.display = 'none';
+    $('saveCollName').value = ''; $('saveReqName').value = '';
+  });
+
+  $('collectionsToggle').addEventListener('click', () => {
+    const collapsed = $('collectionsBody').classList.toggle('collapsed');
+    $('collectionsToggle').textContent = collapsed ? '▼ Expand' : '▲ Collapse';
+  });
+
+  // Export
+  $('exportCollBtn').addEventListener('click', async () => {
+    const data = await fetchCollections();
+    if (!data.length) { alert('No collections to export.'); return; }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'collections.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Import — step 1: pick file
+  let _importData = null;
+  $('importCollBtn').addEventListener('click', () => $('importCollFile').click());
+  $('importCollFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (!Array.isArray(parsed)) { alert('Invalid format: expected a JSON array of collections.'); return; }
+        _importData = parsed;
+        $('importModeBar').style.display = 'block';
+      } catch { alert('Could not parse JSON file.'); }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // reset so same file can be re-selected
+  });
+
+  // Import — step 2: merge or replace
+  $('importMergeBtn').addEventListener('click', async () => {
+    if (!_importData) return;
+    const existing = await fetchCollections();
+    _importData.forEach(incoming => {
+      const match = existing.find(c => c.name === incoming.name);
+      if (match) {
+        incoming.requests.forEach(req => {
+          const dup = match.requests.findIndex(r => r.name === req.name);
+          if (dup >= 0) match.requests[dup] = req; else match.requests.push(req);
+        });
+      } else {
+        existing.push(incoming);
+      }
+    });
+    await postCollections(existing);
+    renderCollections();
+    $('importModeBar').style.display = 'none'; _importData = null;
+  });
+  $('importReplaceBtn').addEventListener('click', async () => {
+    if (!_importData) return;
+    if (!confirm(`Replace all existing collections with the imported file?`)) return;
+    await postCollections(_importData);
+    renderCollections();
+    $('importModeBar').style.display = 'none'; _importData = null;
+  });
+  $('importCancelBtn').addEventListener('click', () => {
+    $('importModeBar').style.display = 'none'; _importData = null;
+  });
+
+  renderCollections();
+
+  // ── Request History ──────────────────────────────────────────────────
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60)   return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60)   return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24)   return `${h}h ago`;
+    return new Date(iso).toLocaleDateString();
+  }
+
+  async function appendHistory(entry) {
+    await fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+    renderHistory();
+  }
+
+  async function renderHistory() {
+    const data = await fetch('/api/history').then(r => r.json()).catch(() => []);
+    const list = $('historyList');
+    list.innerHTML = '';
+    if (!data.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:2px 0">No history yet — send a request to start logging.</div>';
+      return;
+    }
+    data.forEach(entry => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;';
+      const color = METHOD_COLORS[entry.method] || '#858585';
+      const sc = entry.responseStatus;
+      const statusColor = sc >= 200 && sc < 300 ? 'var(--ok)' : sc >= 400 ? 'var(--err)' : sc === 0 ? '#858585' : '#e5a00d';
+      row.innerHTML = `
+        <span class="method-pill" style="background:${color};flex-shrink:0">${escHtml(entry.method)}</span>
+        <span style="flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(entry.url)}</span>
+        <span style="font-size:11px;font-weight:600;color:${statusColor};flex-shrink:0">${entry.responseStatus || 'ERR'}</span>
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0">${entry.responseDurationMs}ms</span>
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0;min-width:60px;text-align:right">${timeAgo(entry.timestamp)}</span>`;
+      row.addEventListener('mouseenter', () => row.style.background = 'var(--input-bg)');
+      row.addEventListener('mouseleave', () => row.style.background = '');
+      row.addEventListener('click', () => loadRestRequest({
+        method:  entry.method,
+        url:     entry.url,
+        headers: entry.requestHeaders || [],
+        body:    entry.requestBody || '',
+      }));
+      list.appendChild(row);
+    });
+  }
+
+  $('historyToggle').addEventListener('click', () => {
+    const collapsed = $('historyBody').classList.toggle('collapsed');
+    $('historyToggle').textContent = collapsed ? '▼ Expand' : '▲ Collapse';
+  });
+
+  $('clearHistoryBtn').addEventListener('click', async () => {
+    if (!confirm('Clear all request history?')) return;
+    await fetch('/api/history', { method: 'DELETE' });
+    renderHistory();
+  });
+
+  renderHistory();
+
+  // ── Load Testing ─────────────────────────────────────────────────────
+  $('ltToggle').addEventListener('click', () => {
+    const collapsed = $('ltBody').classList.toggle('collapsed');
+    $('ltToggle').textContent = collapsed ? '▼ Expand' : '▲ Collapse';
+  });
+
+  let _ltAbort = false;
+
+  $('ltStopBtn').addEventListener('click', () => { _ltAbort = true; });
+
+  $('ltRunBtn').addEventListener('click', async () => {
+    const total       = Math.max(1, Math.min(parseInt($('ltRequests').value)    || 20, 1000));
+    const concurrency = Math.max(1, Math.min(parseInt($('ltConcurrency').value) ||  5,   50));
+    const delay       = Math.max(0,           parseInt($('ltDelay').value)      ||   0);
+
+    const rawHeaders = collectRestHeaders();
+    const subHeaders = {};
+    Object.entries(rawHeaders).forEach(([k, v]) => subHeaders[k] = substituteVars(v));
+    const method = $('restMethod').value;
+    const url = substituteVars($('restUrl').value.trim());
+    if (!url) { alert('Enter a URL in the Request form first.'); return; }
+
+    const payload = {
+      method, url, headers: subHeaders,
+      body: ['POST','PUT','PATCH'].includes(method) ? substituteVars($('restBody').value) : null,
+    };
+
+    _ltAbort = false;
+    $('ltRunBtn').disabled = true;
+    $('ltStopBtn').style.display = 'inline-block';
+    $('ltProgress').style.display = 'block';
+    $('ltResults').style.display = 'none';
+    $('ltProgressBar').style.width = '0%';
+
+    const durations = [], statusCounts = {};
+    let done = 0, successCount = 0;
+    const wallStart = Date.now();
+
+    for (let i = 0; i < total && !_ltAbort; i += concurrency) {
+      const batchSize = Math.min(concurrency, total - i);
+      const batch = Array.from({ length: batchSize }, () =>
+        fetch('/api/rest/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).then(r => r.json()).catch(() => ({ success: false, status: 0, durationMs: 0 }))
+      );
+
+      const settled = await Promise.allSettled(batch);
+      settled.forEach(r => {
+        const d = r.status === 'fulfilled' ? r.value : { success: false, status: 0, durationMs: 0 };
+        durations.push(d.durationMs || 0);
+        if (d.success) successCount++;
+        const code = d.status || 'Err';
+        statusCounts[code] = (statusCounts[code] || 0) + 1;
+        done++;
+      });
+
+      const pct = Math.round((done / total) * 100);
+      $('ltProgressBar').style.width = pct + '%';
+      $('ltProgressLabel').textContent = `${done} / ${total}`;
+      $('ltProgressPct').textContent = pct + '%';
+
+      if (delay > 0 && i + concurrency < total && !_ltAbort)
+        await new Promise(res => setTimeout(res, delay));
+    }
+
+    const elapsed = (Date.now() - wallStart) / 1000;
+    const sorted  = [...durations].sort((a, b) => a - b);
+    const avg     = sorted.reduce((a, b) => a + b, 0) / (sorted.length || 1);
+    const p95     = sorted[Math.floor(sorted.length * 0.95)] ?? 0;
+    const rps     = (done / elapsed).toFixed(1);
+
+    renderLtResults({
+      total: done, success: successCount, failed: done - successCount,
+      avg: Math.round(avg), min: sorted[0] ?? 0, max: sorted[sorted.length - 1] ?? 0,
+      p95, rps, statusCounts,
+    });
+
+    $('ltRunBtn').disabled = false;
+    $('ltStopBtn').style.display = 'none';
+  });
+
+  function statBox(label, value, color) {
+    return `<div style="background:var(--panel-2);border:1px solid var(--border);border-radius:3px;padding:10px;text-align:center">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${label}</div>
+      <div style="font-size:20px;font-weight:600;color:${color}">${value}</div>
+    </div>`;
+  }
+
+  function renderLtResults({ total, success, failed, avg, min, max, p95, rps, statusCounts }) {
+    const res = $('ltResults');
+    res.style.display = 'block';
+    const rate = total ? Math.round((success / total) * 100) : 0;
+    const failColor = failed > 0 ? 'var(--err)' : 'var(--ok)';
+    res.innerHTML = `
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+        <div class="record-section-label" style="margin-bottom:10px">Summary</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+          ${statBox('Total', total, 'var(--text)')}
+          ${statBox('Success', `${success} <span style="font-size:13px">(${rate}%)</span>`, 'var(--ok)')}
+          ${statBox('Failed', failed, failColor)}
+          ${statBox('Req / sec', rps, 'var(--accent)')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          ${statBox('Avg', avg + ' ms', 'var(--text)')}
+          ${statBox('Min', min + ' ms', 'var(--ok)')}
+          ${statBox('Max', max + ' ms', failed > 0 ? 'var(--err)' : 'var(--text)')}
+          ${statBox('P95', p95 + ' ms', 'var(--text)')}
+        </div>
+        <div class="record-section-label" style="margin-bottom:8px">Status Codes</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${Object.entries(statusCounts).sort().map(([code, count]) => {
+            const c = parseInt(code);
+            const bg = c >= 200 && c < 300 ? 'var(--ok)' : c >= 400 ? 'var(--err)' : c === 0 ? '#858585' : '#e5a00d';
+            return `<span style="font-size:12px;background:${bg};color:#fff;padding:3px 10px;border-radius:2px;font-weight:600">${code} &times; ${count}</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Boot
+  loadConnection();
+
+  // --- Schema Registry Browser ---
+  const srModal = document.getElementById('srModal');
+  const srOverlay = document.getElementById('srOverlay');
+
+  function closeSrModal() {
+    srModal.style.display = 'none';
+    srOverlay.style.display = 'none';
+  }
+
+  function openSrModal(targetAction) {
+    srModal.style.display = 'flex';
+    srOverlay.style.display = 'block';
+    srModal.dataset.action = targetAction;
+    $('srSubjectSearch').value = '';
+    $('srSubjectList').innerHTML = '<div style="color:var(--muted);font-size:13px">Loading…</div>';
+    $('srVersionPanel').style.display = 'none';
+    $('srSchemaPanel').style.display = 'none';
+    fetch('/api/schema-registry/subjects')
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { $('srSubjectList').innerHTML = `<div style="color:#f44336;font-size:13px">${data.error}</div>`; return; }
+        const subjects = [...data].sort();
+        renderSubjects(subjects);
+        $('srSubjectSearch').addEventListener('input', () => {
+          const q = $('srSubjectSearch').value.toLowerCase();
+          renderSubjects(subjects.filter(s => s.toLowerCase().includes(q)));
+        });
+      })
+      .catch(e => $('srSubjectList').innerHTML = `<div style="color:#f44336;font-size:13px">Error: ${e.message}</div>`);
+  }
+
+  function renderSubjects(subjects) {
+    $('srSubjectList').innerHTML = subjects.length
+      ? subjects.map(s => `<div class="sr-subject-item" onclick="selectSubject('${s.replace(/'/g, "\\'")}')">${s}</div>`).join('')
+      : '<div style="color:var(--muted);font-size:13px">No subjects found</div>';
+  }
+
+  window.selectSubject = function(subject) {
+    document.querySelectorAll('.sr-subject-item').forEach(el => el.classList.toggle('active', el.textContent === subject));
+    $('srVersionPanel').style.display = 'block';
+    $('srSelectedSubject').textContent = subject;
+    $('srVersionList').innerHTML = '<span style="color:var(--muted);font-size:12px">Loading…</span>';
+    $('srSchemaPanel').style.display = 'none';
+    fetch(`/api/schema-registry/subjects/${encodeURIComponent(subject)}/versions`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { $('srVersionList').innerHTML = `<span style="color:#f44336">${data.error}</span>`; return; }
+        $('srVersionList').innerHTML = ['latest', ...data.reverse()].map(v =>
+          `<span class="sr-version-chip" onclick="selectVersion('${subject.replace(/'/g, "\\'")}','${v}')">${v}</span>`
+        ).join('');
+      });
+  };
+
+  window.selectVersion = function(subject, version) {
+    document.querySelectorAll('.sr-version-chip').forEach(el => el.classList.toggle('active', el.textContent == version));
+    $('srSchemaPanel').style.display = 'block';
+    $('srSchemaPreview').textContent = 'Loading…';
+    fetch(`/api/schema-registry/subjects/${encodeURIComponent(subject)}/versions/${version}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { $('srSchemaPreview').textContent = data.error; return; }
+        try { $('srSchemaPreview').textContent = JSON.stringify(JSON.parse(data.schema), null, 2); }
+        catch { $('srSchemaPreview').textContent = data.schema; }
+        $('srUseSchemaBtn').onclick = () => {
+          const formatted = JSON.stringify(JSON.parse(data.schema), null, 2);
+          if (srModal.dataset.action === 'reference') {
+            addRefSchemaRow();
+            const rows = document.querySelectorAll('#refSchemasList .ref-schema-row');
+            rows[rows.length - 1].querySelector('.ref-schema').value = data.schema;
+            if ($('refSchemasBody').style.display === 'none') $('refSchemasToggle').click();
+          } else if (srModal.dataset.action === 'key') {
+            $('genericKeySchema').value = formatted;
+          } else {
+            $('genericSchema').value = formatted;
+          }
+          closeSrModal();
+        };
+      });
+  };
+
+  $('browseRegistryBtn').addEventListener('click', () => openSrModal('schema'));
+  $('browseRegistryKeyBtn').addEventListener('click', () => openSrModal('key'));
+  document.getElementById('srCloseBtn').addEventListener('click', closeSrModal);
+  srOverlay.addEventListener('click', closeSrModal);
+  document.getElementById('srAddRefBtn').addEventListener('click', () => openSrModal('reference'));
+
+</script>ema Registry Browser Modal -->
+<div id="srOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000"></div>
+<div id="srModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;width:min(860px,95vw);max-height:85vh;background:var(--panel);border:1px solid var(--border);border-radius:10px;flex-direction:column;overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
+    <span style="font-weight:600;font-size:15px">Schema Registry Browser</span>
+    <button id="srCloseBtn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:0">×</button>
+  </div>
+  <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+    <!-- Subjects -->
+    <div style="width:240px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0">
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+        <input id="srSubjectSearch" placeholder="Search subjects…" style="width:100%;box-sizing:border-box;font-size:13px" />
+      </div>
+      <div id="srSubjectList" style="flex:1;overflow-y:auto;padding:6px 0"></div>
+    </div>
+    <!-- Versions + Schema -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div id="srVersionPanel" style="display:none;padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em" id="srSelectedSubject"></div>
+        <div id="srVersionList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <div id="srSchemaPanel" style="display:none;flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <pre id="srSchemaPreview" style="flex:1;overflow:auto;margin:0;padding:14px 16px;font-size:12px;background:var(--panel-2);border-radius:0;white-space:pre-wrap;word-break:break-all"></pre>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px">
+          <button id="srUseSchemaBtn" class="apply-btn" type="button">Use as Schema</button>
+          <button id="srAddRefBtn" class="add-row" type="button">Add as Reference</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

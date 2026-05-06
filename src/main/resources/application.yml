@@ -1,0 +1,36 @@
+server:
+  port: 7070
+
+spring:
+  application:
+    name: outbox
+
+# ---- Kafka / Schema Registry settings ----
+# These are read by KafkaProducerConfig. Override per environment via env vars or
+# Spring profiles. Defaults below assume a local Confluent stack.
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+  schema-registry-url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+
+  # Confluent Cloud SASL/PLAIN auth. Leave api-key blank for local dev.
+  security:
+    protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}      # SASL_SSL for Confluent Cloud
+    sasl-mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+    api-key: ${KAFKA_API_KEY:}
+    api-secret: ${KAFKA_API_SECRET:}
+
+  # Schema Registry auth (separate from broker auth in Confluent Cloud)
+  schema-registry:
+    auth-source: ${SR_AUTH_SOURCE:USER_INFO}
+    api-key: ${SR_API_KEY:}
+    api-secret: ${SR_API_SECRET:}
+
+# Where to look for generated SpecificRecord classes
+avro:
+  scan-package: ${AVRO_SCAN_PACKAGE:io.outbox.avro}
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    io.confluent: INFO
+    io.outbox: DEBUG

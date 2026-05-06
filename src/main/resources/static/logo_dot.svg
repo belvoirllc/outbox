@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="200" height="200" rx="42" ry="42" fill="url(#bg)"/>
+
+  <!-- Motion lines (speed streaks behind the envelope) -->
+  <line x1="28" y1="108" x2="62" y2="108" stroke="#818cf8" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+  <line x1="18" y1="122" x2="55" y2="122" stroke="#818cf8" stroke-width="5" stroke-linecap="round" opacity="0.35"/>
+  <line x1="30" y1="136" x2="60" y2="136" stroke="#818cf8" stroke-width="4" stroke-linecap="round" opacity="0.2"/>
+
+  <!-- Envelope body (tilted ~-12 deg, flying up-right) -->
+  <g transform="translate(100,100) rotate(-12) translate(-58,-38)">
+    <!-- Envelope rectangle -->
+    <rect x="0" y="0" width="116" height="76" rx="10" fill="#e0e7ff" />
+    <!-- Flap fold lines (V shape) -->
+    <polyline points="0,0 58,44 116,0" fill="none" stroke="#818cf8" stroke-width="5" stroke-linejoin="round"/>
+    <!-- Bottom crease lines -->
+    <line x1="0" y1="76" x2="46" y2="38" stroke="#c7d2fe" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="116" y1="76" x2="70" y2="38" stroke="#c7d2fe" stroke-width="3.5" stroke-linecap="round"/>
+  </g>
+</svg>
