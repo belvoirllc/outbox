@@ -79,7 +79,7 @@ Outbox depends on the following notable third-party libraries:
 | Apache Kafka Clients | Apache 2.0 |
 | DataFaker | Apache 2.0 |
 | Reflections | Apache 2.0 |
-| Confluent `kafka-avro-serializer` | [Confluent Community License 1.0](https://www.confluent.io/confluent-community-license) |
-| Confluent `kafka-schema-registry-client` | [Confluent Community License 1.0](https://www.confluent.io/confluent-community-license) |
+| Confluent `kafka-avro-serializer` | [Apache 2.0](https://packages.confluent.io/maven/io/confluent/kafka-avro-serializer/7.6.0/kafka-avro-serializer-7.6.0.pom) |
+| Confluent `kafka-schema-registry-client` | [Apache 2.0](https://packages.confluent.io/maven/io/confluent/kafka-schema-registry-client/7.6.0/kafka-schema-registry-client-7.6.0.pom) |
 
-The Confluent Community License permits free use, modification, and distribution for any purpose **other than** providing a competing hosted Schema Registry service. For full terms see the [Confluent Community License](https://www.confluent.io/confluent-community-license). Full third-party attribution is in [NOTICE](NOTICE).
+Full third-party attribution is in [NOTICE](NOTICE).
